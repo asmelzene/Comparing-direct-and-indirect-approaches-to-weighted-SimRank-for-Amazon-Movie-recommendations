@@ -6,6 +6,7 @@ https://snap.stanford.edu/data/web-Movies.html
 the below file was unzipped and since it was too big to open, a parser was written to save a part of it after unzipping the file on the harddisk as movies.txt
 
 movies.txt.gz	Amazon movie data (~8 million reviews)
+
 product/productId: B00006HAXW
 review/userId: A1RSDE90N6RSZF
 review/profileName: Joseph M. Kotow

@@ -1,10 +1,12 @@
 import fileinput
 import numpy as np
 import datetime
+import pandas as pd
 
 def AmazonMovies(num_reviews, file_name="movies.txt", outputTo='screen'):
     '''
-    *1) product/productId: B003AI2VGA
+    *1) product/productId: B003AI2VGA 
+    !!!!! >>> some MOVIES don't start with B but instead full numbers like: 0790747324   <<< !!!!!
     *2) review/userId: A141HP4LYPWMSR
     *3) review/profileName: Brian E. Erland "Rainbow Sphinx"
     4) review/helpfulness: 7/7
@@ -88,7 +90,7 @@ def Time_Stamp():
     
     return date_array
     
-def FileNameUnique(prefix = "Movies_"):
+def FileNameUnique(prefix = "Movies_", suffix = '.txt'):
     file_name = prefix
 
     date_array = Time_Stamp()
@@ -97,7 +99,7 @@ def FileNameUnique(prefix = "Movies_"):
         if idx == 2:
             file_name += i + '_'
         elif idx == 5:
-            file_name += i + '.txt'
+            file_name += i + suffix
         else:
             file_name += i + '.'
 
@@ -124,16 +126,100 @@ def Save_Movies(movie_graph, prefix = "Movies_Connected_"):
     # it was observed that some edges are saved in the graph as (v, u, weight) # graph.edges returns some edges in that way
     # so, for the second use, to make the life easier for us, we save them by checking if they are in the right order
     with open(file_name, "w") as output:
-            for movie in movie_list:
-                if movie[0].startswith('A'):
-                    userId = movie[0]
-                    movieId = movie[1]
-                elif movie[0].startswith('B'):
-                    userId = movie[1]
-                    movieId = movie[0]
-                str_movie = userId + "," + movieId + "," + movie[2]
-                #output.write(str(movie) + "\n")
-                output.write(str_movie + "\n")
+        for movie in movie_list:
+            if movie[0].startswith('A'):
+                userId = movie[0]
+                movieId = movie[1]
+            else:
+                #elif movie[0].startswith('B'):
+                # some MOVIES don't start with B but instead full numbers like: 0790747324
+                userId = movie[1]
+                movieId = movie[0]
+            str_movie = userId + "," + movieId + "," + movie[2]
+            #output.write(str(movie) + "\n")
+            output.write(str_movie + "\n")
+    print('Graph info saved in: {}'.format(file_name))
+    return file_name
+    
+def Reorganize_Edges_Graph(movie_graph):
+    # ('userID', 'movieID', 'score')
+    # ('A141HP4LYPW', 'B003AI2VGA', '3.0')
+    movie_list = list(movie_graph.edges.data('weight', default=1))
+    movie_list_organized = []
+
+    # since the graph is undirected, once the edges is created as (u, v, weight)
+    # it was observed that some edges are saved in the graph as (v, u, weight) # graph.edges returns some edges in that way
+    # so, for the second use, to make the life easier for us, we re-organize them by checking if they are in the right order
+    for movie in movie_list:
+        if movie[1].startswith('A'):
+            # if the second item is a user not a movie, we will switch their places
+            userId = movie[0]
+            movieId = movie[1]
+        else:
+            userId = movie[1]
+            movieId = movie[0]
+
+        organized_row = [userId, movieId, movie[2]]
+        movie_list_organized.append(organized_row)
+            
+    print('Graph has been reorganized as a list, row format: [\'userID\', \'movieID\', \'score\']')
+    return movie_list_organized
+
+def Reorganize_Edges_List(movie_list):
+    movie_list_organized = []
+
+    # since the graph is undirected, once the edges is created as (u, v, weight)
+    # it was observed that some edges are saved in the graph as (v, u, weight) # graph.edges returns some edges in that way
+    # so, for the second use, to make the life easier for us, we re-organize them by checking if they are in the right order
+    for movie in movie_list:
+        if movie[1].startswith('A'):
+            # if the second item is a user not a movie, we will switch their places
+            userId = movie[0]
+            movieId = movie[1]
+        else:
+            userId = movie[1]
+            movieId = movie[0]
+
+        organized_row = [userId, movieId, movie[2]]
+        movie_list_organized.append(organized_row)
+            
+    print('Graph has been reorganized as a list, row format: [\'userID\', \'movieID\', \'score\']')
+    return movie_list_organized
+    
+def Reorganize_Edges_DataFrame(movie_graph, input_type='List'):
+    if input_type == 'Graph':
+        movie_list = list(movie_graph.edges.data('weight', default=1))
+    elif input_type == 'List':
+        movie_list = movie_graph
+    
+    userId_list = []
+    movieId_list = []
+    score_list = []
+
+    # since the graph is undirected, once the edges is created as (u, v, weight)
+    # it was observed that some edges are saved in the graph as (v, u, weight) # graph.edges returns some edges in that way
+    # so, for the second use, to make the life easier for us, we re-organize them by checking if they are in the right order
+    for movie in movie_list:
+        if movie[1].startswith('A'):
+            # if the second item is a user not a movie, we will switch their places
+            userId_list.append(movie[0])
+            movieId_list.append(movie[1])
+            score_list.append(movie[2])
+        else:
+            userId_list.append(movie[1])
+            movieId_list.append(movie[0])
+            score_list.append(movie[2])
+
+        # Define a dictionary 
+        dict_movies = {'userId':userId_list,
+        'movieId':movieId_list,
+        'score':score_list}
+ 
+        # Convert the dictionary into DataFrame 
+        df_movies = pd.DataFrame(dict_movies)
+            
+    print('Graph has been reorganized as a DataFrame, row format: [\'userId\', \'movieId\', \'score\']')
+    return df_movies    
     
 def Read_Connected_Movies_x(file_name):
     #movie_list = np.array([["userId", "productId", "score"]])

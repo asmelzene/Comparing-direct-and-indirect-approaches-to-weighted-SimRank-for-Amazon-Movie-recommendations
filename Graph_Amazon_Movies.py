@@ -80,7 +80,7 @@ class Graph_Amazon:
 
             # userId, productId, score
             for movie in movie_dict:
-                print(movie_dict.get(movie))
+                #print(movie_dict.get(movie))
                 # usedId__(movie)[1] > movieId__(movie)[0]
                 gr_amazon_movies.add_edge(movie_dict.get(movie)[1], movie_dict.get(movie)[0], weight=movie_dict.get(movie)[3])
 
@@ -93,6 +93,7 @@ class Graph_Amazon:
             self.bottom_nodes, self.top_nodes = bipartite.sets(max_connected_gr_amazon_movies)
 
             return max_connected_gr_amazon_movies
+        
         elif prs_out == 'file' or prs_out == 'screen':
             prs.AmazonMovies(n_movies, file_name, prs_out)
     
@@ -108,7 +109,7 @@ class Graph_Amazon:
         print('Sum-Top Nodes:{}\nTop nodes (movies): {}'.format(len(self.top_nodes), self.top_nodes))
         print('Sum-Bottom Nodes:{}\nBottom nodes (users):\n {}'.format(len(self.bottom_nodes), self.bottom_nodes))
     
-    def Create_Graph_From_List_No_Weight(self, movie_list):
+    def Create_Graph_From_List_NO_EDGE(self, movie_list):
         userId = []
         movie_name = []
             
@@ -123,9 +124,6 @@ class Graph_Amazon:
         return gr_amazon_movies
 
     def Create_Graph_From_List_WITH_Weight(self, movie_list):
-        userId = []
-        movie_name = []
-            
         gr_amazon_movies = nx.Graph() 
 
         for movie in movie_list:
@@ -145,5 +143,6 @@ class Graph_Amazon:
         return edge_list
     
     def Is_Connected_Bipartite(self, max_connected_gr_amazon_movies):
-        print('Is connected: {}'.format(nx.is_connected(max_connected_gr_amazon_movies)))
-        print('Is bipartite: {}'.format(nx.is_bipartite(max_connected_gr_amazon_movies)))
+        i_c = nx.is_connected(max_connected_gr_amazon_movies)
+        i_b = nx.is_bipartite(max_connected_gr_amazon_movies)
+        print('Is connected: {} ... Is bipartite: {}'.format(i_c, i_b))

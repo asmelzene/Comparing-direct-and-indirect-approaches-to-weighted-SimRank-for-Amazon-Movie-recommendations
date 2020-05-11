@@ -10,6 +10,19 @@ warnings.filterwarnings("ignore", category=UserWarning)
 #import datetime
 #import time
 
+# check those links
+# https://books.google.se/books?id=uYttDgAAQBAJ&pg=PA159&lpg=PA159&dq=bipartite+specify+top_nodes&source=bl&ots=GJX_GzFs4t&sig=ACfU3U2O-QbIbTo7Uh3VOUlYfyEcGMvotQ&hl=en&sa=X&ved=2ahUKEwjezcag15TpAhXuxIsKHQmHBeEQ6AEwA3oECAgQAQ#v=onepage&q&f=false
+
+# https://networkx.github.io/documentation/networkx-1.10/reference/algorithms.bipartite.html
+
+# https://pynetwork.readthedocs.io/en/latest/networkx_basics.html
+
+# https://networkx.github.io/documentation/networkx-1.10/reference/generated/networkx.algorithms.components.connected.connected_component_subgraphs.html
+
+# https://kite.com/python/docs/networkx.reportviews.EdgeDataView
+
+# https://stackoverflow.com/questions/24829123/plot-bipartite-graph-using-networkx-in-python
+
 class Graph_Amazon:
     def __init__(self):
         #self.label_size = 10
@@ -37,7 +50,9 @@ class Graph_Amazon:
         for movie in movie_dict:
             gr_amazon_movies.add_edge(movie_dict.get(movie)[1], movie_dict.get(movie)[0], weight=movie_dict.get(movie)[3])
 
-        max_connected_gr_amazon_movies = max(nx.connected_component_subgraphs(gr_amazon_movies), key=len)
+        # connected_component_subgraphs >> deprecated
+        #max_connected_gr_amazon_movies = max(nx.connected_component_subgraphs(gr_amazon_movies), key=len)
+        max_connected_gr_amazon_movies = max((gr_amazon_movies.subgraph(c) for c in nx.connected_components(gr_amazon_movies)), key=len)
         
         self.bottom_nodes, self.top_nodes = bipartite.sets(max_connected_gr_amazon_movies)
 
@@ -71,7 +86,9 @@ class Graph_Amazon:
 
             self.gr_amazon_movies = gr_amazon_movies
                 
-            max_connected_gr_amazon_movies = max(nx.connected_component_subgraphs(gr_amazon_movies), key=len)
+            # connected_component_subgraphs >> deprecated
+            #max_connected_gr_amazon_movies = max(nx.connected_component_subgraphs(gr_amazon_movies), key=len)
+            max_connected_gr_amazon_movies = max((gr_amazon_movies.subgraph(c) for c in nx.connected_components(gr_amazon_movies)), key=len)
 
             self.bottom_nodes, self.top_nodes = bipartite.sets(max_connected_gr_amazon_movies)
 
@@ -102,6 +119,19 @@ class Graph_Amazon:
         gr_amazon_movies = nx.Graph() 
         gr_amazon_movies.add_nodes_from(userId, bipartite=0)
         gr_amazon_movies.add_nodes_from(movie_name, bipartite=1)
+        
+        return gr_amazon_movies
+
+    def Create_Graph_From_List_WITH_Weight(self, movie_list):
+        userId = []
+        movie_name = []
+            
+        gr_amazon_movies = nx.Graph() 
+
+        for movie in movie_list:
+            gr_amazon_movies.add_edge(movie[0], movie[1], weight=movie[2])
+            #userId.append(movie[0])
+            #movie_name.append(movie[1])
         
         return gr_amazon_movies
         

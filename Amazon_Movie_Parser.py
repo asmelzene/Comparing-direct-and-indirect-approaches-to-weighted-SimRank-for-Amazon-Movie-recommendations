@@ -17,8 +17,8 @@ def AmazonMovies(num_reviews, file_name="movies.txt", outputTo='screen'):
     9) null
     '''
     i = 0
-    single_entry=np.zeros(4, str)
-    single_entry_completed = True
+    #single_entry=np.zeros(4, str)
+    #single_entry_completed = True
 
     movie_data = np.array([["product/productId", "review/userId", "review/profileName", "review/score"]])
     #movie_data = np.array([["product/productId", "review/userId", "review/profileName", \
@@ -33,16 +33,26 @@ def AmazonMovies(num_reviews, file_name="movies.txt", outputTo='screen'):
     # after finishing its job or even if there is an exception thrown
     with open(file_name, encoding="latin-1") as input_file:
         for line in input_file:
+            #print('line')
             i += 1
+            #print(line)
             #for each entry, repeats at every 9
             if (i % 9 == 1):
                 # just to be sure we are not carrying anything from the previous record, we reset the single_entry
                 #single_entry = np.zeros(4, str)
-                single_entry=np.array([["productId", "userId", "profileName", "score"]])
+                # just to be sure we are not carrying anything from the previous record, we reset the single_entry
+                #single_entry = np.zeros(4, str)
+                # !!!!
+                # if we just create below singleentry with "userId", it trims the userID to 11 letters...
+                # that's why I added random numbers to the end because some userIDs are 14 letters...
+                # !!!!
+                single_entry=np.array([["productId....", "userId67891234", "profileName", "score"]])
                 #single_entry=np.array([["productId", "userId", "profileName", "helpfulness", "score"]])
                 single_entry[0, 0] = line[19:].rstrip("\n")
+                #print('i={}  product={}'.format(i,line[19:].rstrip("\n")))
             elif (i % 9 == 2):
                 single_entry[0, 1] = line[15:].rstrip("\n")
+                #print('i={}  user={}'.format(i, line[15:].rstrip("\n")))
             elif (i % 9 == 3):
                 single_entry[0, 2] = line[20:].rstrip("\n")
             elif (i % 9 == 5):
@@ -51,6 +61,7 @@ def AmazonMovies(num_reviews, file_name="movies.txt", outputTo='screen'):
                 num_rec += 1
                 #['B003AI2VGA\n' 'A141HP4LYPW' 'Brian E. Er' '3.0\n']
                 movie_data = np.append(movie_data, single_entry, axis = 0)
+                #print('i={}  user={}'.format(i, movie_data))
 
             if (num_rec == num_reviews):
                 fileinput.close()
@@ -75,6 +86,212 @@ def AmazonMovies(num_reviews, file_name="movies.txt", outputTo='screen'):
             key += 1
         del movie_dict[0]
         return movie_dict
+    
+def Filter_AmazonMovies(num_reviews, userID, movieID, file_name="movies.txt", outputTo='screen'):
+    '''
+    *1) product/productId: B003AI2VGA 
+    !!!!! >>> some MOVIES don't start with B but instead full numbers like: 0790747324   <<< !!!!!
+    *2) review/userId: A141HP4LYPWMSR
+    *3) review/profileName: Brian E. Erland "Rainbow Sphinx"
+    4) review/helpfulness: 7/7
+    *5) review/score: 3.0
+    6) review/time: 1182729600
+    7) review/summary: "There Is So Much Darkness Now ~ Come For The Miracle"
+    8) review/text: Synopsis: On the daily..............
+    9) null
+    '''
+    i = 0
+    #single_entry=np.zeros(4, str)
+    single_entry_completed = True
+
+    movie_data = np.array([["product/productId", "review/userId", "review/profileName", "review/score", "time", "text_sum"]])
+    #movie_data = np.array([["product/productId", "review/userId", "review/profileName", \
+     #                       "review/helpfulness", "review/score"]])
+    num_rec = 0
+    user_match = False
+    movie_match = False
+    
+    print('movieID={}'.format(movieID))
+    print('userID={}'.format(userID))
+    ## ***** We don't necessarilly need helpfulness, just keeping it in case we use it, otherwise, we can remove it
+    # encoding="latin-1 >> is needed otherwise possible to receive:
+    # UnicodeDecodeError: 'utf8' codec can't decode byte 0x9c
+    # https://stackoverflow.com/questions/12468179/unicodedecodeerror-utf8-codec-cant-decode-byte-0x9c
+    # reading/writing the file with "with"is also important since "with"handles opening/closing the file
+    # after finishing its job or even if there is an exception thrown
+    with open(file_name, encoding="latin-1") as input_file:
+        for line in input_file:
+            #print('line')
+            i += 1
+            #print(line)
+            #for each entry, repeats at every 9
+            if (i % 9 == 1):
+                # just to be sure we are not carrying anything from the previous record, we reset the single_entry
+                #single_entry = np.zeros(4, str)
+                # !!!!
+                # if we just create below singleentry with "userId", it trims the userID to 11 letters...
+                # that's why I added random numbers to the end because some userIDs are 14 letters...
+                # !!!!
+                single_entry=np.array([["productId.....", "userId67891234", "profileName", "score", "time", "text_sum"]])
+                #single_entry=np.array([["productId", "userId", "profileName", "helpfulness", "score"]])
+                movie_name = line[19:].rstrip("\n")
+                single_entry[0, 0] = movie_name
+                #if movie_name == movieID:
+                if movieID in movie_name:
+                    movie_match = True
+                    #print('i={} .. movie_name={}'.format(i, movie_name))
+                #print('i={}  product={}'.format(i,line[19:].rstrip("\n")))
+            elif (i % 9 == 2):
+                user_name = line[15:].rstrip("\n")
+                #print(user_name)
+                single_entry[0, 1] = user_name
+                #if user_name == userID:
+                if userID in user_name:
+                    user_match = True
+                    print('i={} .. user_name={}'.format(i, user_name))
+                    print(single_entry[0, 1])
+                #print('i={}  user={}'.format(i, line[15:].rstrip("\n")))
+            elif (i % 9 == 3):
+                single_entry[0, 2] = line[20:].rstrip("\n")
+            elif (i % 9 == 5):
+                single_entry[0, 3] = line[14:].rstrip("\n")
+            elif (i % 9 == 6):
+                single_entry[0, 4] = line[13:].rstrip("\n")
+            elif (i % 9 == 8):
+                # we want to check if the text is same or not. first 10 letters should be fine for that
+                single_entry[0, 5] = line[13:].rstrip("\n")[0:10]
+                #print(line[13:].rstrip("\n")[0:10])
+            elif (i % 9 == 0):
+                num_rec += 1
+                #['B003AI2VGA\n' 'A141HP4LYPW' 'Brian E. Er' '3.0\n']
+                if user_match == True and movie_match == True:
+                    movie_data = np.append(movie_data, single_entry, axis = 0)
+                    
+                user_match = False
+                movie_match = False
+                #print('i={}  user={}'.format(i, movie_data))
+
+            if (num_rec == num_reviews):
+                fileinput.close()
+                break
+
+    if outputTo == 'file':
+        # to avoid overwriting an existing file, if you want to overwrite, just basically use output.txt
+        file_name = FileNameUnique() 
+        #with open("output.txt", "w") as output:
+        with open(file_name, "w") as output:
+            for movie in movie_data:
+                output.write(str(movie) + "\n")
+    elif outputTo == 'screen':
+        #if you just want to show it here, uncomment to above part
+        for movie in movie_data:
+            print(str(movie) + "\n")
+    elif outputTo == 'dictionary':
+        movie_dict = {}
+        key = 0
+        for movie in movie_data:
+            movie_dict[key] = [movie[0], movie[1], movie[2], movie[3]]
+            key += 1
+        del movie_dict[0]
+        return movie_dict
+
+def AmazonMovies_VALIDATION(num_reviews, file_name="movies.txt", outputTo='screen', start_index = 40000):
+    '''
+    *1) product/productId: B003AI2VGA 
+    !!!!! >>> some MOVIES don't start with B but instead full numbers like: 0790747324   <<< !!!!!
+    *2) review/userId: A141HP4LYPWMSR
+    *3) review/profileName: Brian E. Erland "Rainbow Sphinx"
+    4) review/helpfulness: 7/7
+    *5) review/score: 3.0
+    6) review/time: 1182729600
+    7) review/summary: "There Is So Much Darkness Now ~ Come For The Miracle"
+    8) review/text: Synopsis: On the daily..............
+    9) null
+    '''
+    i = 0
+    single_entry=np.zeros(4, str)
+    single_entry_completed = True
+
+    movie_data = np.array([["product/productId", "review/userId", "review/profileName", "review/score"]])
+    #movie_data = np.array([["product/productId", "review/userId", "review/profileName", \
+     #                       "review/helpfulness", "review/score"]])
+    num_rec = 0
+    
+    remain_start_index = start_index % 9
+    if remain_start_index != 1:
+        start_index += remain_start_index + 1
+    
+    #print(start_index)
+        
+    ## ***** We don't necessarilly need helpfulness, just keeping it in case we use it, otherwise, we can remove it
+    # encoding="latin-1 >> is needed otherwise possible to receive:
+    # UnicodeDecodeError: 'utf8' codec can't decode byte 0x9c
+    # https://stackoverflow.com/questions/12468179/unicodedecodeerror-utf8-codec-cant-decode-byte-0x9c
+    # reading/writing the file with "with"is also important since "with"handles opening/closing the file
+    # after finishing its job or even if there is an exception thrown
+    with open(file_name, encoding="latin-1") as input_file:
+        for line in input_file:
+            #print(line)
+            i += 1
+            # we don't want to read the first records because we use them to build our model
+            # we will use this batch for validation
+            if i > start_index * 9:
+                #for each entry, repeats at every 9
+                if (i % 9 == 1):
+                    # just to be sure we are not carrying anything from the previous record, we reset the single_entry
+                    #single_entry = np.zeros(4, str)
+                    # just to be sure we are not carrying anything from the previous record, we reset the single_entry
+                    #single_entry = np.zeros(4, str)
+                    # !!!!
+                    # if we just create below singleentry with "userId", it trims the userID to 11 letters...
+                    # that's why I added random numbers to the end because some userIDs are 14 letters...
+                    # !!!!
+                    single_entry=np.array([["productId....", "userId67891234", "profileName", "score"]])
+                    #single_entry=np.array([["productId", "userId", "profileName", "helpfulness", "score"]])
+                    #print('i={}  product={}'.format(i,line[19:].rstrip("\n")))
+                    single_entry[0, 0] = line[19:].rstrip("\n")
+                elif (i % 9 == 2):
+                    single_entry[0, 1] = line[15:].rstrip("\n")
+                    #print('i={}  user={}'.format(i, line[15:].rstrip("\n")))
+                elif (i % 9 == 3):
+                    single_entry[0, 2] = line[20:].rstrip("\n")
+                elif (i % 9 == 5):
+                    #print('i={}.. line={}'.format(i, line))
+                    #print(single_entry)
+                    #print(type(single_entry))
+                    #print(single_entry.shape)
+                    single_entry[0, 3] = line[14:].rstrip("\n")
+                elif (i % 9 == 0):
+                    num_rec += 1
+                    #['B003AI2VGA\n' 'A141HP4LYPW' 'Brian E. Er' '3.0\n']
+                    #print('i={}.. line={}'.format(i, line))
+                    movie_data = np.append(movie_data, single_entry, axis = 0)
+                    #print('i={}  user={}'.format(i, movie_data))
+
+                if (num_rec == num_reviews):
+                    fileinput.close()
+                    break
+
+    if outputTo == 'file':
+        # to avoid overwriting an existing file, if you want to overwrite, just basically use output.txt
+        file_name = FileNameUnique() 
+        #with open("output.txt", "w") as output:
+        with open(file_name, "w") as output:
+            for movie in movie_data:
+                output.write(str(movie) + "\n")
+    elif outputTo == 'screen':
+        #if you just want to show it here, uncomment to above part
+        for movie in movie_data:
+            print(str(movie) + "\n")
+    elif outputTo == 'dictionary':
+        movie_dict = {}
+        key = 0
+        for movie in movie_data:
+            movie_dict[key] = [movie[0], movie[1], movie[2], movie[3]]
+            key += 1
+        del movie_dict[0]
+        return movie_dict
+    
 def Time_Stamp():
     date_time = datetime.datetime.now()
     

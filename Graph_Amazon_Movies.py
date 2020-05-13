@@ -96,6 +96,38 @@ class Graph_Amazon:
         
         elif prs_out == 'file' or prs_out == 'screen':
             prs.AmazonMovies(n_movies, file_name, prs_out)
+            
+    def Create_Bipartite_VALIDATION(self, file_name = 'movies.txt', start_index = 40000, n_movies = 200, prs_out = 'dictionary'):
+        #prs_out = 'dictionary'  # options: screen, file.  # file name is determined automatically if file is chosen
+        if prs_out == 'dictionary':
+            print('Create_Bipartite_VALIDATION is running...')
+            movie_dict = prs.AmazonMovies_VALIDATION(n_movies, file_name, prs_out, start_index)
+
+            #movie_name = []
+            #userId = []
+            
+            gr_amazon_movies = nx.Graph()
+            #gr_amazon_movies.add_nodes_from(userId, bipartite=0)
+            #gr_amazon_movies.add_nodes_from(movie_name, bipartite=1)
+
+            # userId, productId, score
+            for movie in movie_dict:
+                #print(movie_dict.get(movie))
+                # usedId__(movie)[1] > movieId__(movie)[0]
+                gr_amazon_movies.add_edge(movie_dict.get(movie)[1], movie_dict.get(movie)[0], weight=movie_dict.get(movie)[3])
+
+            self.gr_amazon_movies = gr_amazon_movies
+                
+            # connected_component_subgraphs >> deprecated
+            #max_connected_gr_amazon_movies = max(nx.connected_component_subgraphs(gr_amazon_movies), key=len)
+            max_connected_gr_amazon_movies = max((gr_amazon_movies.subgraph(c) for c in nx.connected_components(gr_amazon_movies)), key=len)
+
+            self.bottom_nodes, self.top_nodes = bipartite.sets(max_connected_gr_amazon_movies)
+
+            return max_connected_gr_amazon_movies
+        
+        elif prs_out == 'file' or prs_out == 'screen':
+            prs.AmazonMovies(n_movies, file_name, prs_out)
     
     def Draw_Bipartite(self, max_connected_gr_amazon_movies):
         #self.top = nx.bipartite.sets(max_connected_gr_amazon_movies)[0]

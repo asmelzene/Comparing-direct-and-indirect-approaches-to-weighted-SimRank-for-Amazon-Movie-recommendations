@@ -165,6 +165,25 @@ class GraphComp:
 
         return P_norm, R, R_zero
     
+    def Generate_P_Matrix_only(self, max_connected_gr_amazon_movies, bottom_nodes, top_nodes):
+        start_time = datetime.datetime.now()
+        print('P to_numpy_matrix: {}'.format(datetime.datetime.now()))
+        P = nx.to_numpy_matrix(max_connected_gr_amazon_movies)
+        # by doing the below conversion, we are just considering the links between the nodes, we ignore the weights
+        # we try to understand if considering the weights will benefit us or not
+        #P[P > 0] = 1
+        print('P normalize: {}'.format(datetime.datetime.now()))
+        #P_norm = self.Normalize_Array(P)
+        # below method is faster 
+        P_norm = self.Normalize_Matrix(P, dim = 'row')
+
+        end_time = datetime.datetime.now()
+
+        print('P finalize: {}'.format(datetime.datetime.now()))
+        print('Calculation time-P matrix generation from the graph: {}'.format(end_time-start_time))
+
+        return P_norm
+    
     def generate_node_lists(self, max_connected_gr_amazon_movies, bottom_nodes, top_nodes):
         # TEST - see if the matrix-P shows the correct values (to be sure if it's not changing the order)
         # !!! IMPORTANT !!!
@@ -218,6 +237,7 @@ class GraphComp:
 
         end_time = datetime.datetime.now()
         print('Calculation time-user-movie indexes: {}'.format(end_time-start_time))
+        print('\n')
 
         if self.debug_mode == 'On':
             print('\n15 movie indexes just to give some samples:')
@@ -255,7 +275,8 @@ class GraphComp:
 
         #print(R)
         end_time = datetime.datetime.now()
-        print('Calculation time-steps walked: {}'.format(end_time-start_time))
+        if self.debug_mode == 'On':
+            print('Calculation time-steps walked: {}'.format(end_time-start_time))
         return R
 
     #def similarity_check_vector(R, ref_user_idx, top_similarity=40):
@@ -582,7 +603,7 @@ class GraphComp:
                         'is_reviewed': is_reviewed}
         '''
 
-        print('\n')
+        #print('\n')
 
         df_summary = pd.DataFrame(dict_summary)
 
@@ -734,3 +755,4 @@ class GraphComp:
         # dataset1 has 25254 more users than the dataset2
         print('USERS >> YES: Exist in both .. NO: Exist in dataset-1 but not exist in dataset-2')
         print('count_YES: {} .. count_NO: {}'.format(count_YES, count_NO))
+        

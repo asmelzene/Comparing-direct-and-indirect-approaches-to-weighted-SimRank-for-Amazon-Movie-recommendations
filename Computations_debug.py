@@ -27,9 +27,11 @@ class GraphComp:
         except:
             print('no need for laptop')
         
-    def Create_Bipartite_Giant_Component(self, grp, file_name='data/movies.txt', n_movies=40000, prs_out='dictionary'):
+    def Create_Bipartite_Giant_Component(self, grp, file_name='data/movies.txt', n_movies=40000, prs_out='dictionary', file_type='txt'):
+        # grp: Graph_Amazon_Movies.Graph_Amazon()
         start_time = datetime.datetime.now()
-        max_connected_gr_amazon_movies = grp.Create_Bipartite(file_name, n_movies, prs_out)
+        
+        max_connected_gr_amazon_movies = grp.Create_Bipartite(file_name, n_movies, prs_out, file_type)
 
         #bottom_nodes, top_nodes = bipartite.sets(max_connected_gr_amazon_movies)
         end_time = datetime.datetime.now()
@@ -37,11 +39,11 @@ class GraphComp:
 
         return max_connected_gr_amazon_movies
     
-    def Create_Bipartite_Giant_Component_VAL(self, grp, file_name='data/movies.txt', start_index=40000, n_movies=5000, prs_out='dictionary'):
+    def Create_Bipartite_Giant_Component_VAL(self, grp, file_name='data/movies.txt', start_index=40000, n_movies=5000, prs_out='dictionary', file_type='txt'):
         start_time = datetime.datetime.now()
         # we can save train and validation data in files so that we don't need to read movies.txt each time
 
-        max_connected_gr_amazon_movies = grp.Create_Bipartite_VALIDATION(file_name, start_index, n_movies, prs_out)
+        max_connected_gr_amazon_movies = grp.Create_Bipartite_VALIDATION(file_name, start_index, n_movies, prs_out, file_type)
 
         #bottom_nodes, top_nodes = bipartite.sets(max_connected_gr_amazon_movies)
         end_time = datetime.datetime.now()
@@ -88,7 +90,7 @@ class GraphComp:
 
         # double check if the numbers are matching before saving the records
         # and after creating the graph from the saved file
-        print('BEFORE: # of nodes: {} ... # of edges: {}'.format(len(max_connected_gr_amazon_movies.nodes), \
+        print('# of nodes: {} ... # of edges: {}'.format(len(max_connected_gr_amazon_movies.nodes), \
                                                                  len(max_connected_gr_amazon_movies.edges)))
 
         ##### TEST 
@@ -107,11 +109,14 @@ class GraphComp:
         if axis == 1:
             arr_sum_per_row = arr_to_normalize.sum(axis=1)
             arr_norm = arr_to_normalize/np.tile(arr_sum_per_row, (arr_sum_per_row.shape[0], 1)).T
+            # >> this works with tt sample
         elif axis == 0:
             arr_sum_per_row = arr_to_normalize.sum(axis=0)
             arr_norm = arr_to_normalize/np.tile(arr_sum_per_row, (arr_sum_per_row.shape[1], 1)).T
+            # >> this works with MOVIES >> I need to check why...
         return arr_norm
 
+        #tt = np.array([[2, 4, 6], [1, 5, 8], [20, 4, 6]])
         # normalize P values (between 0 and 1) so that they can reflect probabilities 
         # the probability with itself will be the highest
         # !!! IMPORTANT !!!
@@ -123,8 +128,12 @@ class GraphComp:
         #tt = np.array([[2, 4, 6], [1, 5, 8], [20, 4, 6]])
         arr_row_sums = arr_to_normalize.sum(axis=1)
 
-        #arr_norm = arr_to_normalize / arr_row_sums[:, np.newaxis]
-        arr_norm = arr_to_normalize / arr_row_sums[np.newaxis][0]
+        if dim == 'row':
+            arr_norm = arr_to_normalize / arr_row_sums[np.newaxis][0]
+            # >> this one works for MOVIES
+        else:
+            arr_norm = arr_to_normalize / arr_row_sums[:, np.newaxis]
+            # >> this one works for tt >> I need to check why...
         
         return arr_norm
 
@@ -198,7 +207,7 @@ class GraphComp:
         # Bxxxxxx = top_nodes = movies
         print('node0={} .. node1={} .. edge01={} .. weight01={}'.format(node_0, node_1, edge_01, weight_01))
         '''
-
+        
         node_list = list(max_connected_gr_amazon_movies.nodes)
         bottom_node_list = list(bottom_nodes)
         top_node_list = list(top_nodes)
@@ -523,6 +532,221 @@ class GraphComp:
         is_reviewed_new = False
         for u_idx in user_similarity_top_non_zero:
             user_name = node_list[u_idx]
+                          
+            for m in movie_list_ref:
+                #m_idx = node_list.index(m)
+                # we are looking for the edges in the new dataset so we will use the movies in the new one
+                # the same movie can exist in the first dataset but with different edges
+                # meaning that, in the first dataset, the user might not have an edge with this movie
+                # but he can make a review at a later time (t+1)
+                # that's why the search is done in the new one and index is from the new dataset
+                m_idx = node_list_v.index(m)
+
+                # some movies will be new and they will not exist in the old dataset
+                try:
+                    is_reviewed_old = max_connected_gr_amazon_movies.has_edge(user_name, m)
+                except:
+                    is_reviewed_old = False
+
+                # the user might not be in the second dataset, so it can throw an exception
+                # if the user is not there, then is_reviewed_new = False
+                try:
+                    is_reviewed_new = max_connected_gr_amazon_movies_v.has_edge(user_name, m)
+                except:
+                    is_reviewed_new = False
+
+                # if there is an edge in any of the datasets, we will set the value as TRUE
+                is_reviewed.append(is_reviewed_old or is_reviewed_new)
+                user_reviewed.append(user_name)
+                user_reviewed_id.append(u_idx)
+                movie_reviewed.append(m)
+                movie_reviewed_id.append(m_idx)
+
+                scr_old = '...'
+                scr_new = '...'
+                try:
+                    scr_old = max_connected_gr_amazon_movies.get_edge_data(user_name, m)['weight']
+                except:
+                    scr_old = '...'  # NA - no review score
+
+                try:
+                    scr_new = max_connected_gr_amazon_movies_v.get_edge_data(user_name, m)['weight']
+                except:
+                    scr_new = '...'  # NA - no review score
+
+                if scr_new != '...':
+                    scr = scr_new
+                else:
+                    scr = scr_old
+
+                #scr = str(max_connected_gr_amazon_movies.get_edge_data(node_list[u_idx], m)['weight'])
+                #max_connected_gr_amazon_movies.get_edge_data(node_list[u_idx], 'B003AI2VGA')['weight']
+                movie_score.append(scr)
+
+                review_count_old = 0
+                review_count_new = 0
+
+                try:
+                    review_count_old = len(list(max_connected_gr_amazon_movies.edges([m])))
+                except:
+                    review_count_old = 0
+
+                try:
+                    review_count_new = len(list(max_connected_gr_amazon_movies_v.edges([m])))
+                except:
+                    review_count_new = 0
+
+                review_count = review_count_old + review_count_new
+                review_count_list.append(review_count)
+
+                #is_reviewed = max_connected_gr_amazon_movies.get_edge_data(u, m)['weight']
+
+
+        dict_summary = {'user': user_reviewed, 'movie': movie_reviewed, 
+                        'user_id': user_reviewed_id, 'movie_id': movie_reviewed_id, 
+                        'is_reviewed': is_reviewed, 'score': movie_score,
+                       'n_review': review_count_list}
+
+        '''
+        dict_summary = {'user': user_reviewed, 'movie': movie_reviewed, 
+                        'user_id': user_reviewed_id, 'movie_id': movie_reviewed_id, 
+                        'is_reviewed': is_reviewed}
+        '''
+
+        #print('\n')
+
+        df_summary = pd.DataFrame(dict_summary)
+
+        if self.debug_mode == 'On':
+            print('# of users in the evaluation: {}'.format(top_similarity))
+
+        '''
+        true_values=len(df_summary.query("movie=='B003AI2VGA' and is_reviewed==True"))
+        total_values=len(df_summary.query("movie=='B003AI2VGA'"))
+
+        # review ratio by similar users
+        ratio_similar = true_values/total_values*100
+        print(ratio_similar)
+        '''
+
+        # DOUBLE CHECK if edge calculation is correct
+        # The problem is many of the users just review 1 movie or very few movies
+        # total review count per user. How many movies did a specific user reviewed?
+
+        '''
+        user_review_counts = []
+        user_review_counts_ALL = 0
+        # total review count per movie. How many users did a specific movie reviewed by?
+        movie_review_counts = []
+        movie_review_counts_ALL = 0
+
+        for usr in bottom_node_list:
+            usr_count = len(list(max_connected_gr_amazon_movies.edges([usr])))
+            user_review_counts.append([usr, usr_count])
+            user_review_counts_ALL += usr_count
+
+        for mov in top_node_list:
+            mov_count = len(list(max_connected_gr_amazon_movies.edges([mov])))
+            user_review_counts.append([mov, mov_count])
+            movie_review_counts_ALL += mov_count
+
+        print(user_review_counts)
+        '''
+
+        return df_summary, movie_list_ref, movie_FOR_reference_user, user_similarity_top_non_zero
+    
+    def similarity_check_vector_VAL_model3(self, R, movie_indexes, ref_user_idx, node_list, node_list_v, movie_FOR_reference_user, max_connected_gr_amazon_movies, max_connected_gr_amazon_movies_v, top_similarity=40):
+        # !!!!
+        # here, we will pass a vector of the interested user from the R matrix, we will not pass the entire matrix
+        # it will be like:
+        # R[user_index]  and R_zero[user_index]
+
+        # user similarity check
+        # fetch the values for node=0 (which is a user)
+        #ref_user_idx = 3 #23746
+        # we will pick the most similar 10 users in this case
+        # this value should be picked as around the below ratio and I believe, 
+        # if any of the top-similar users reviewed a movie, 
+        # we can guess like our user will watch the movie: WILL BE TESTED
+        # OR we can pick a high number (>ratio) for the top similarity and the percentage>10 maybe counted as the candidate
+        #top_similarity = n_reviews/n_movies
+        #top_similarity = 40
+        user_test = np.array(list(R))
+        if self.debug_mode == 'On':
+            print('R matrix values for the user (r vector of the user): \n{}'.format(user_test))
+
+        # sort the values of each column from smaller to the bigger
+        sorted_nodes = np.argsort(user_test)
+
+        user_similarity = []
+
+        # we will not consider the user himself or movies as similar nodes
+        for idx in sorted_nodes[0][0]:
+            if idx != ref_user_idx and idx not in movie_indexes:
+                user_similarity.append(idx)
+
+        user_similarity_top = user_similarity[-top_similarity:]
+
+        # ALL is too many, so we will not print it
+        #print('Ordered similarities-ALL: {}'.format(user_similarity))
+        if self.debug_mode == 'On':
+            print('\n Top similarities: {}'.format(user_similarity_top))
+
+        #for usr in user_similarity_top:
+        #    print(list(max_connected_gr_amazon_movies.nodes)[user_similarity_top[usr]])
+        #print(list(max_connected_gr_amazon_movies.nodes)[user_similarity_top[0]])
+
+        user_similarity_top_non_zero = []
+        user_similarity_top_score = []
+        # in some cases, we recognized that some of the top neighbors have 0 probabilities
+        # when we remove those neighbor, the results look better
+        user_similarity_top_score_non_zero = []
+        for usr_top in user_similarity_top:
+            scr_top = round(R[0, usr_top], 4)
+            user_similarity_top_score.append(scr_top)
+            if scr_top > 0:
+                user_similarity_top_non_zero.append(usr_top)
+                user_similarity_top_score_non_zero.append(scr_top)
+
+        if self.debug_mode == 'On':
+            print('\n user_similarity_top_score: {}'.format(user_similarity_top_score))
+            print('\n user_similarity_top_non_zero: {}'.format(user_similarity_top_non_zero))
+            print('\n user_similarity_top_score_non_zero: {}'.format(user_similarity_top_score_non_zero))
+
+        # top_nodes = MOVIES, bottom_nodes = users
+        # !!!!!
+        # now, only checking for the old users if they created a new edge or not
+        # the check can be extended for the new users (can be? if the user is new, there will be no neighbors
+        # from the random walk in the previous dataset. if we make a random walk in the new dataset, then we will
+        # already know the result for the user and it would be including in the calculations. on the other hand,
+        # if we think of removing the user form the second dataset, then the second dataset will lose its
+        # bipartite )
+        user_reviewed = []
+        user_reviewed_id = []
+        movie_list_ref = []
+        movie_reviewed = []
+        movie_reviewed_id = []
+        is_reviewed = []
+        movie_score = []
+        review_count_list = []
+
+        #movie_by_reference_user = list(max_connected_gr_amazon_movies.edges([node_list[ref_user_idx]]))
+
+        ''''
+        # here we don't pass edges, we directly pass the whole movies in a list format
+        for edge_m in movie_FOR_reference_user:
+            # if the second item is a user then we will add the first item to the movie_list
+            if edge_m[1].startswith('A'):
+                movie_list_ref.append(edge_m[0])
+            else:
+                movie_list_ref.append(edge_m[1])
+        '''
+        movie_list_ref = movie_FOR_reference_user
+
+        is_reviewed_old = False
+        is_reviewed_new = False
+        for u_idx in user_similarity_top_non_zero:
+            user_name = node_list[u_idx]
             for m in movie_list_ref:
                 #m_idx = node_list.index(m)
                 # we are looking for the edges in the new dataset so we will use the movies in the new one
@@ -674,6 +898,8 @@ class GraphComp:
     def similarity_summary_ratio_VAL(self, df_summary, movie_list_ref, max_connected_gr_amazon_movies, max_connected_gr_amazon_movies_v):
         ratio_review_list = []
         review_count_list2 = []
+        review_count_list2_OLD = []
+        review_count_list2_NEW = []
 
         for m in movie_list_ref:
             true_values = len(df_summary.query("movie=='" + m + "' and is_reviewed==True"))
@@ -685,10 +911,12 @@ class GraphComp:
             ratio_similar = true_values/total_values*100
             ratio_review_list.append(ratio_similar)
             review_count_list2.append(review_count)
+            review_count_list2_OLD.append(review_count_old)
+            review_count_list2_NEW.append(review_count_new)
 
         #dict_summary_ratio = {'movie': movie_list_ref, 'ratio_similar': ratio_review_list}
         dict_summary_ratio = {'movie': movie_list_ref, 'ratio_similar': ratio_review_list,
-                             'review_count': review_count_list2}
+                             'review_count': review_count_list2, 'review_count_old': review_count_list2_OLD, 'review_count_new': review_count_list2_NEW}
 
         df_summary_ratio = pd.DataFrame(dict_summary_ratio)
         #print('# of users in the evaluation: {}'.format(top_similarity))

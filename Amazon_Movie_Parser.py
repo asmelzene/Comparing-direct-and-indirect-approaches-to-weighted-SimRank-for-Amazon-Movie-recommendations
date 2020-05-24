@@ -2,16 +2,18 @@ import fileinput
 import numpy as np
 import datetime
 import pandas as pd
+import pickle as pickle
+import itertools
 
 def AmazonMovies(num_reviews, file_name="movies.txt", outputTo='screen'):
     '''
     *1) product/productId: B003AI2VGA 
     !!!!! >>> some MOVIES don't start with B but instead full numbers like: 0790747324   <<< !!!!!
     *2) review/userId: A141HP4LYPWMSR
-    *3) review/profileName: Brian E. Erland "Rainbow Sphinx"
+    3) review/profileName: Brian E. Erland "Rainbow Sphinx"
     4) review/helpfulness: 7/7
     *5) review/score: 3.0
-    6) review/time: 1182729600
+    *6) review/time: 1182729600
     7) review/summary: "There Is So Much Darkness Now ~ Come For The Miracle"
     8) review/text: Synopsis: On the daily..............
     9) null
@@ -53,8 +55,9 @@ def AmazonMovies(num_reviews, file_name="movies.txt", outputTo='screen'):
             elif (i % 9 == 2):
                 single_entry[0, 1] = line[15:].rstrip("\n")
                 #print('i={}  user={}'.format(i, line[15:].rstrip("\n")))
-            elif (i % 9 == 3):
-                single_entry[0, 2] = line[20:].rstrip("\n")
+            elif (i % 9 == 6):
+                # before, we used to take profilename (line[20:]) but now we are taking the time
+                single_entry[0, 2] = line[13:].rstrip("\n")
             elif (i % 9 == 5):
                 single_entry[0, 3] = line[14:].rstrip("\n")
             elif (i % 9 == 0):
@@ -86,6 +89,20 @@ def AmazonMovies(num_reviews, file_name="movies.txt", outputTo='screen'):
             key += 1
         del movie_dict[0]
         return movie_dict
+    elif outputTo == 'dict_to_file':
+        movie_dict = {}
+        key = 0
+        for movie in movie_data:
+            movie_dict[key] = [movie[0], movie[1], movie[2], movie[3]]
+            key += 1
+        del movie_dict[0]
+        
+        # saves as a binary file
+        file_name = FileNameUnique(suffix = '.pkl')
+        print('saving file')
+        with open(file_name, 'wb') as f:
+            pickle.dump(movie_dict, f, pickle.HIGHEST_PROTOCOL)
+        print('Your file saved as {}'.format(file_name))
     
 def Filter_AmazonMovies(num_reviews, userID, movieID, file_name="movies.txt", outputTo='screen'):
     '''
@@ -194,6 +211,20 @@ def Filter_AmazonMovies(num_reviews, userID, movieID, file_name="movies.txt", ou
             key += 1
         del movie_dict[0]
         return movie_dict
+    elif outputTo == 'dict_to_file':
+        movie_dict = {}
+        key = 0
+        for movie in movie_data:
+            movie_dict[key] = [movie[0], movie[1], movie[2], movie[3]]
+            key += 1
+        del movie_dict[0]
+        
+        # saves as a binary file
+        file_name = FileNameUnique(suffix = '.pkl')
+        print('saving file')
+        with open(file_name, 'wb') as f:
+            pickle.dump(movie_dict, f, pickle.HIGHEST_PROTOCOL)
+        print('Your file saved as {}'.format(file_name))
 
 def AmazonMovies_VALIDATION(num_reviews, file_name="movies.txt", outputTo='screen', start_index = 40000):
     '''
@@ -279,6 +310,8 @@ def AmazonMovies_VALIDATION(num_reviews, file_name="movies.txt", outputTo='scree
         with open(file_name, "w") as output:
             for movie in movie_data:
                 output.write(str(movie) + "\n")
+        
+        print('Your file saved as {}'.format(file_name))
     elif outputTo == 'screen':
         #if you just want to show it here, uncomment to above part
         for movie in movie_data:
@@ -291,7 +324,21 @@ def AmazonMovies_VALIDATION(num_reviews, file_name="movies.txt", outputTo='scree
             key += 1
         del movie_dict[0]
         return movie_dict
-    
+    elif outputTo == 'dict_to_file':
+        movie_dict = {}
+        key = 0
+        for movie in movie_data:
+            movie_dict[key] = [movie[0], movie[1], movie[2], movie[3]]
+            key += 1
+        del movie_dict[0]
+        
+        # saves as a binary file
+        file_name = FileNameUnique(suffix = '.pkl')
+        print('saving file')
+        with open(file_name, 'wb') as f:
+            pickle.dump(movie_dict, f, pickle.HIGHEST_PROTOCOL)
+        print('Your file saved as {}'.format(file_name))
+
 def Time_Stamp():
     date_time = datetime.datetime.now()
     
@@ -461,3 +508,27 @@ def Read_Connected_Movies(file_name):
             movie_list.append(line.rstrip("\n").split(sep=","))
                
     return movie_list
+
+def Read_Data_From_Raw_Save(file_name):
+    #lst_tst = amp.Read_Connected_Movies('Movies_22.5.2020_20.47.56.txt')
+    lst_tst = amp.Read_Connected_Movies(file_name)
+    arr_tst = lst_tst[0][0].replace('[','').replace(']','').replace("'",'').split(sep=" ")
+    
+def Load_Pickle_File_x(file_name):
+    with open(file_name, 'rb') as f:
+        return pickle.load(f)
+            
+def Load_Pickle_File(file_name, n_reviews = 20):
+    with open(file_name, 'rb') as f:
+        dict_movies = pickle.load(f)
+    
+    #import itertools
+    return dict(itertools.islice(dict_movies.items(), n_reviews))
+
+def Load_Pickle_File_VAL(file_name, start_index, n_reviews = 20):
+    with open(file_name, 'rb') as f:
+        dict_movies = pickle.load(f)
+    
+    #import itertools
+    return dict(list(dict_movies.items())[start_index:start_index+n_reviews])
+    

@@ -66,10 +66,34 @@ class Graph_Amazon:
         
         return max_connected_gr_amazon_movies
     
-    def Create_Bipartite(self, file_name = 'movies.txt', n_movies = 200, prs_out = 'dictionary'):
+    def Create_Graph(self, file_name = 'movies.txt', n_movies = 200, prs_out = 'dictionary'):
         #prs_out = 'dictionary'  # options: screen, file.  # file name is determined automatically if file is chosen
+        # here, we don't care ig the graph is CONNECTED or NOT
         if prs_out == 'dictionary':
             movie_dict = prs.AmazonMovies(n_movies, file_name, prs_out)
+
+            gr_amazon_movies = nx.Graph()
+
+            # userId, productId, score
+            for movie in movie_dict:
+                #print(movie_dict.get(movie))
+                # usedId__(movie)[1] > movieId__(movie)[0]
+                gr_amazon_movies.add_edge(movie_dict.get(movie)[1], movie_dict.get(movie)[0], weight=movie_dict.get(movie)[3])
+
+            self.gr_amazon_movies = gr_amazon_movies
+
+            return gr_amazon_movies
+        
+        elif prs_out == 'file' or prs_out == 'screen':
+            prs.AmazonMovies(n_movies, file_name, prs_out)
+    
+    def Create_Bipartite(self, file_name = 'movies.txt', n_movies = 200, prs_out = 'dictionary', file_type = 'txt'):
+        #prs_out = 'dictionary'  # options: screen, file.  # file name is determined automatically if file is chosen
+        if prs_out == 'dictionary':
+            if file_type == 'txt':
+                movie_dict = prs.AmazonMovies(n_movies, file_name, prs_out)
+            elif file_type == 'pickle':
+                movie_dict = prs.Load_Pickle_File(file_name, n_movies)
 
             #movie_name = []
             #userId = []
@@ -97,11 +121,14 @@ class Graph_Amazon:
         elif prs_out == 'file' or prs_out == 'screen':
             prs.AmazonMovies(n_movies, file_name, prs_out)
             
-    def Create_Bipartite_VALIDATION(self, file_name = 'movies.txt', start_index = 40000, n_movies = 200, prs_out = 'dictionary'):
+    def Create_Bipartite_VALIDATION(self, file_name = 'movies.txt', start_index = 40000, n_movies = 200, prs_out = 'dictionary', file_type = 'txt'):
         #prs_out = 'dictionary'  # options: screen, file.  # file name is determined automatically if file is chosen
         if prs_out == 'dictionary':
             print('Create_Bipartite_VALIDATION is running...')
-            movie_dict = prs.AmazonMovies_VALIDATION(n_movies, file_name, prs_out, start_index)
+            if file_type == 'txt':
+                movie_dict = prs.AmazonMovies_VALIDATION(n_movies, file_name, prs_out, start_index)
+            elif file_type == 'pickle':
+                movie_dict = prs.Load_Pickle_File_VAL(file_name, start_index, n_movies)
 
             #movie_name = []
             #userId = []

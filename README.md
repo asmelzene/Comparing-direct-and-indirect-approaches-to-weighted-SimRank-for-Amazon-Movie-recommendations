@@ -1,4 +1,4 @@
-# KTH-ID2211-Data-Mining
+# Comparing direct and indirect approaches to weighted SimRank for Amazon Movie recommendations
 
 the data source used:
 https://snap.stanford.edu/data/web-Movies.html
